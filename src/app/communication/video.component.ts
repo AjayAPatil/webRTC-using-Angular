@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ChatService } from '../services/chat.service';
+import { async } from 'q';
 /**
 Step 1: caller creates offer
 
@@ -28,12 +29,10 @@ Step 8: caller receives the answer and sets remote description
 })
 export class VideoComponent implements OnInit {
     public title = 'webrtc';
-    public localPeerConn: any;
-    public remotePeerConn: any;
+    public peerConnection: any;
     public localStream: any;
     public remoteStream: any;
-    public
-    offerOptions = {
+    public offerOptions = {
         offerToReceiveAudio: true,
         offerToReceiveVideo: true
     };
@@ -41,9 +40,10 @@ export class VideoComponent implements OnInit {
     constructor(private chatService: ChatService) {
         this.GetLocalStream();
     }
-    
+
     SetConnection() {
-        this.localPeerConn = new RTCPeerConnection();
+        //on both side
+        this.peerConnection = new RTCPeerConnection();
         var iceServerConfig = {
             iceServers: [{
                 urls: ["stun:bturn1.xirsys.com"]
@@ -61,44 +61,142 @@ export class VideoComponent implements OnInit {
             }]
         };
 
-        this.localPeerConn.setConfiguration(iceServerConfig);
+        this.peerConnection.setConfiguration(iceServerConfig);
 
-        this.localPeerConn.onicecandidate = e => {
-            this.OnIceCandidate(this.localPeerConn, e);
-        };
-        this.localPeerConn.oniceconnectionstatechange = e => {
-            this.OnIceStateChange(this.localPeerConn, e);
-        };
         this.localStream.getTracks().forEach(track => {
-            this.localPeerConn.addTrack(track, this.localStream);
+            this.peerConnection.addTrack(track, this.localStream);
         });
+        //this.peerConnection.addStream(this.localStream);
+        this.peerConnection.onicecandidate = e => {
+            this.OnIceCandidate(this.peerConnection, e);
+        };
+        this.peerConnection.onnegotiationneeded = async () => {
+            try {
+                // this.peerConnection.createOffer()
+                // .then((event) =>{
+                //     this.peerConnection.setLocalDescription(new RTCSessionDescription(event))
+                //     .then(this.chatService.SendCallRequest(this.peerConnection.localDescription, 'desc'))
+                // })
+
+                // this.peerConnection.createOffer()
+                //     .then(this.peerConnection.setLocalDescription(this)
+                //         .then(this.chatService.SendCallRequest(this.peerConnection.localDescription, 'desc')))
+
+                // await this.peerConnection.setLocalDescription(await this.peerConnection.createOffer());
+                // this.chatService.SendCallRequest(this.peerConnection.localDescription, 'desc');
+            } catch (err) {
+                console.error(err);
+            }
+        };
+        this.peerConnection.ontrack = (event) => {
+            console.log("on track");
+            // don't set srcObject again if it is already set.
+            for (var stream of event.streams) {
+                console.log("Remote streams: " + stream.id);
+            }
+            this.GotRemoteStream(event.streams[0]);
+        };
+        this.peerConnection.oniceconnectionstatechange = e => {
+            this.OnIceStateChange(this.peerConnection, e);
+        };
     }
     ngOnInit() {
         this.chatService
             .ReceiveCallRequest()
             .subscribe(data => {
-                console.log(data);
-                var candidate = data.data.candidate;
-                this.OnCallRequestReceived(candidate);
+                this.OnCallRequestReceived(data.data);
             });
     }
-    OnCallRequestReceived(candidate) {
+    OnCallRequestReceived(data) {
         console.log("call received");
-        if (candidate) {
-            if(candidate.type == "offer"){
-                this.localPeerConn.setRemoteDescription(candidate).then(
-                    () => {
-                        this.OnSetRemoteSuccess(this.localPeerConn);
-                    },
-                    this.OnSetSessionDescriptionError.bind(this)
-                );
-            }else if(candidate.type == "answer"){
-                //this.localPeerConn.setRemoteDescription(candidate).catch(err => console.log(err));
-            }else{
+        console.log(data);
+        if (data.desc) {
+            var descrip = new RTCSessionDescription(data.desc);
+            if (descrip.type == "offer") {
+                this.SetConnection();
+                this.OnCallOffer(descrip);
+            } else if (descrip.type == "answer") {
+                this.OnCallAnswer(descrip);
+            } else {
                 console.log("Unsupported SDP type!!");
             }
+        } else if (data.candidate) {
+            var candidate = new RTCIceCandidate(data.candidate);
+            this.peerConnection.addIceCandidate(candidate).catch(err => console.log(err));
         }
     }
+
+    Call() {
+        this.SetConnection();
+        /**Step 1: caller creates offer */
+        this.peerConnection.onnegotiationneeded = async () => {
+            try {
+                this.peerConnection.createOffer(this.offerOptions)
+                    .then(
+                        this.OnCreateOfferSuccess.bind(this),
+                        this.OnCreateSessionDescriptionError.bind(this));
+            } catch (err) {
+                console.error(err);
+            }
+        };
+        // //caller creates offer
+        // this.peerConnection.createOffer(this.offerOptions)
+        //     .then(
+        //         this.OnCreateOfferSuccess.bind(this),
+        //         this.OnCreateSessionDescriptionError.bind(this));
+    }
+
+    OnCreateOfferSuccess(event) {
+        /**Step 2: caller sets localDescription */
+        this.peerConnection.setLocalDescription(new RTCSessionDescription(event)).then(
+            () => {
+                /**Step 3: caller sends the description to the callee */
+                this.chatService.SendCallRequest(this.peerConnection.localDescription, 'desc');
+                this.ShowSuccess('created offer /nlocal description set /n=>Success');
+            },
+            this.OnSetSessionDescriptionError.bind(this)
+        );
+    }
+
+    OnCallOffer(descrip) {
+        /**Step 4: callee receives the offer sets remote description */
+        this.peerConnection.setRemoteDescription(descrip).then(
+            () => {
+                this.OnSetRemoteSuccess(this.peerConnection);
+            },
+            this.OnSetSessionDescriptionError.bind(this)
+        );
+    }
+
+    OnSetRemoteSuccess(val) {
+        console.log("remote success");
+        /**Step 5: callee creates answer */
+        this.peerConnection.createAnswer().then(
+            this.OnCreateAnswerSuccess.bind(this),
+            this.OnCreateSessionDescriptionError.bind(this)
+        );
+    }
+
+    OnCreateAnswerSuccess(event) {
+        /**Step 6: callee sets local description */
+        console.log('event');
+        console.log(event);
+        this.peerConnection.setLocalDescription(new RTCSessionDescription(event)).then(
+            () => {
+                /**Step 7: callee send the description to caller */
+                this.chatService.SendCallRequest(this.peerConnection.localDescription, 'desc');
+                this.ShowSuccess("create answer /n=>success");
+            },
+            this.OnSetSessionDescriptionError.bind(this)
+        );
+    }
+
+    OnCallAnswer(descrip) {
+        /**Step 8: caller receives the answer and sets remote description */
+        this.peerConnection.setRemoteDescription(descrip)
+            .then(() => console.log(this), console.log(this)).catch(err => console.log(err));
+    }
+
     //get local stream
     GetLocalStream() {
         navigator.mediaDevices.getUserMedia({
@@ -116,23 +214,17 @@ export class VideoComponent implements OnInit {
         var lv = document.getElementById('vid') as HTMLVideoElement;
         lv.srcObject = stream;
         this.localStream = stream;
-        
-        this.SetConnection();
-    }
+        console.log("local stream id => " + stream.id);
 
-    Call() {
-        //caller creates offer
-        this.localPeerConn.createOffer(this.offerOptions)
-            .then(
-                this.OnCreateOfferSuccess.bind(this),
-                this.OnCreateSessionDescriptionError.bind(this));
+        //this.SetConnection();
     }
 
     OnIceCandidate(conn, event) {
         if (event.candidate) {
             // Send the candidate to the remote peer
             console.log("Send the candidate to the remote peer");
-            this.chatService.SendCallRequest(this.localPeerConn.localDescription);
+            var candi = new RTCIceCandidate(event.candidate);
+            this.chatService.SendCallRequest(candi, 'candidate');
         } else {
             // All ICE candidates have been sent
             console.log("All ICE candidates have been sent");
@@ -145,56 +237,32 @@ export class VideoComponent implements OnInit {
         }
     }
 
-    GotRemoteStream(event) {
+    GotRemoteStream(stream) {
         console.log("got remote stream");
         var lv = document.getElementById('remote-video') as HTMLVideoElement;
-        lv.srcObject = event.streams[0];
-        for (var stream of event.streams) {
-            console.log("Remote streams: " + stream.id);
-        }
-    }
-
-    OnCreateOfferSuccess(event) {
-        //caller set local description
-        this.localPeerConn.setLocalDescription(event).then(
-            () => {
-                this.OnSetLocalSuccess(this.localPeerConn);
-            },
-            this.OnSetSessionDescriptionError.bind(this)
-        );
-    }
-
-    OnSetLocalSuccess(val) {
-        console.log("local success");
-    }
-    OnSetRemoteSuccess(val) {
-        console.log("remote success");
-        this.localPeerConn.createAnswer().then(
-            this.OnCreateAnswerSuccess.bind(this),
-            this.OnCreateSessionDescriptionError.bind(this)
-        );
-    }
-    OnSetSessionDescriptionError(val) {
-        console.log("error");
-    }
-    OnCreateAnswerSuccess(event) {
-        //callee set local description
-        console.log('event');
-        console.log(event);
-        this.localPeerConn.setLocalDescription(event).then(
-            () => {
-                this.OnSetLocalSuccess(this.localPeerConn);
-            },
-            this.OnSetSessionDescriptionError.bind(this)
-        );
+        lv.srcObject = stream;
+        // for (var stream of event.streams) {
+        //     if (!lv.srcObject)
+        //         lv.srcObject = stream;
+        //     console.log("Remote streams: " + stream.id);
+        // }
     }
 
     OnCreateSessionDescriptionError(event) {
-        this.localPeerConn.setRemoteDescription(event).then(
-            () => {
-                this.OnSetRemoteSuccess(this.localPeerConn);
-            },
-            this.OnSetSessionDescriptionError.bind(this)
-        );
+        console.log("OnCreateSessionDescriptionError");
+        // this.peerConnection.setRemoteDescription(event).then(
+        //     () => {
+        //         this.OnSetRemoteSuccess(this.peerConnection);
+        //     },
+        //     this.OnSetSessionDescriptionError.bind(this)
+        // );
     }
+
+    ShowSuccess(message) {
+        console.log(message);
+    }
+    OnSetSessionDescriptionError(val) {
+        console.log("error " + val);
+    }
+
 }

@@ -34,27 +34,33 @@ export class ChatService {
     public GetConnectedUsers() {
         return Observable.create((observer) => {
             this.socket.on('client-list', (data) => {
-                console.log(data + ' joined');
                 observer.next(data);
             });
         });
     }
     /**
      * 
-     * @param candidate for video call
+     * @param candidate or @param description for video call
      * need to send remote user id
      */
-    public SendCallRequest(candidate){
-        this.socket.emit('call-request', {
-            //to: remoteuserid,
-            candidate: candidate
-          });
+    public SendCallRequest(val,type){
+        var data;
+        if(type == 'desc'){
+            data={
+                //to: uid,
+                desc: val
+            }
+        }else{
+            data = {
+                //to: uid,
+                candidate: val
+            }
+        }
+        this.socket.emit('call-request', data);
     }
     public ReceiveCallRequest(){
         return Observable.create((observer) => {
             this.socket.on('call-request', (data) => {
-                console.log('requested');
-                console.log(data);
                 observer.next(data);
             });
         });
