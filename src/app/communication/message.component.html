@@ -1,0 +1,7 @@
+<div>
+    <span *ngFor="let m of users">{{m}}<br></span>
+    <input type="text" [(ngModel)]="message">
+    <button (click)="SendMessage()">Send</button>
+    <button (click)="GetUserList()">GetUserList</button>
+</div>
+<span *ngFor="let m of messages">{{m}}<br></span>
