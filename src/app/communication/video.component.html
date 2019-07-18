@@ -1,3 +1,13 @@
-<button (click)="Call()">got it</button>
-<video id="vid" controls autoplay></video>
-<video id="remote-video" controls autoplay></video>
+<div class="row">
+    <button (click)="Call()">Connect</button>
+</div>
+<div class="row" style="height: 75%;">
+    <div class="col-lg-6" style="overflow: auto; height: 100%;">
+        <video id="remote-video" class="remotevideo" controls autoplay></video>
+        <video id="local-video" class="localvideo" controls autoplay muted></video>
+    </div>
+    <div class="col-lg-6" style="overflow: auto; height: 100%;">
+    </div>
+</div>
+<!-- <div id="div-remote-video"></div> -->
+<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>

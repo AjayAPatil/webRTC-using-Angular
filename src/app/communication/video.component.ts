@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, empty } from 'rxjs';
 import { ChatService } from '../services/chat.service';
 import { async } from 'q';
 /**
@@ -25,7 +25,8 @@ Step 8: caller receives the answer and sets remote description
  */
 @Component({
     selector: 'video-call',
-    templateUrl: './video.component.html'
+    templateUrl: './video.component.html',
+    styleUrls: ['./communication.css']
 })
 export class VideoComponent implements OnInit {
     public title = 'webrtc';
@@ -36,6 +37,7 @@ export class VideoComponent implements OnInit {
         offerToReceiveAudio: true,
         offerToReceiveVideo: true
     };
+    public selectors = [];
 
     constructor(private chatService: ChatService) {
         this.GetLocalStream();
@@ -46,7 +48,7 @@ export class VideoComponent implements OnInit {
         this.peerConnection = new RTCPeerConnection();
         var iceServerConfig = {
             iceServers: [{
-                urls: ["stun:bturn1.xirsys.com"]
+                urls: ["stun:bturn1.xirsys1221.com"]
             }, {
                 username: "9hiaOVYRRn31s_Lv2sGS-iGgtEKg5_3SVWfeEZyO-4GWtKxUv0sCxQVNGkxlk-zBAAAAAF0sGiFhamF5cGF0aWw=",
                 credential: "04f626c0-a6c8-11e9-8ad1-26d3ed601a80",
@@ -69,24 +71,6 @@ export class VideoComponent implements OnInit {
         //this.peerConnection.addStream(this.localStream);
         this.peerConnection.onicecandidate = e => {
             this.OnIceCandidate(this.peerConnection, e);
-        };
-        this.peerConnection.onnegotiationneeded = async () => {
-            try {
-                // this.peerConnection.createOffer()
-                // .then((event) =>{
-                //     this.peerConnection.setLocalDescription(new RTCSessionDescription(event))
-                //     .then(this.chatService.SendCallRequest(this.peerConnection.localDescription, 'desc'))
-                // })
-
-                // this.peerConnection.createOffer()
-                //     .then(this.peerConnection.setLocalDescription(this)
-                //         .then(this.chatService.SendCallRequest(this.peerConnection.localDescription, 'desc')))
-
-                // await this.peerConnection.setLocalDescription(await this.peerConnection.createOffer());
-                // this.chatService.SendCallRequest(this.peerConnection.localDescription, 'desc');
-            } catch (err) {
-                console.error(err);
-            }
         };
         this.peerConnection.ontrack = (event) => {
             console.log("on track");
@@ -199,20 +183,23 @@ export class VideoComponent implements OnInit {
 
     //get local stream
     GetLocalStream() {
+        // navigator.mediaDevices.enumerateDevices()
+        //     .then(this.GotDevices.bind(this))
+        //     .catch(this.HandleDeviceError.bind(this));
         navigator.mediaDevices.getUserMedia({
-            video: true,//{ width: 1280, height: 720 },
+            video: true,
             audio: true
-        })
-            .then(this.GotLocalStream.bind(this))
-            .catch(function (e) {
-                console.log(e);
-                alert('getUserMedia() error: ' + e.name);
-            });
+        }).then(this.GotLocalStream.bind(this))
+            .then(this.GotDevices.bind(this))
+            .catch(this.HandleDeviceError.bind(this));
     }
     //got local stream
     GotLocalStream(stream) {
-        var lv = document.getElementById('vid') as HTMLVideoElement;
+        var lv = document.getElementById('local-video') as HTMLVideoElement;
         lv.srcObject = stream;
+        lv.controls = false;
+        lv.muted = true;
+        lv.volume = 0;
         this.localStream = stream;
         console.log("local stream id => " + stream.id);
 
@@ -241,6 +228,14 @@ export class VideoComponent implements OnInit {
         console.log("got remote stream");
         var lv = document.getElementById('remote-video') as HTMLVideoElement;
         lv.srcObject = stream;
+
+        // var remotevid=document.createElement("video") as HTMLVideoElement;
+        // remotevid.srcObject=stream;
+        // remotevid.autoplay = true;
+        // remotevid.id=stream.id;
+        // var lv = document.querySelector('#div-remote-video');
+        // lv.appendChild(remotevid);
+
         // for (var stream of event.streams) {
         //     if (!lv.srcObject)
         //         lv.srcObject = stream;
@@ -264,5 +259,80 @@ export class VideoComponent implements OnInit {
     OnSetSessionDescriptionError(val) {
         console.log("error " + val);
     }
-
+    GotDevices(deviceInfos) {
+        // Handles being called several times to update labels. Preserve values.
+        // const values = this.selectors.map(select => select.value);
+        // selectors.forEach(select => {
+        //   while (select.firstChild) {
+        //     select.removeChild(select.firstChild);
+        //   }
+        // });
+        var flagMic = false;
+        var flagSpeaker = false;
+        var flagWebCam = false;
+        for (let i = 0; i !== deviceInfos.length; ++i) {
+            const deviceInfo = deviceInfos[i];
+            console.log(i + 1, deviceInfo.label);
+            if (deviceInfo.kind == 'audioinput') {
+                flagMic = true;
+            }
+            if (deviceInfo.kind == 'audiooutput') {
+                flagSpeaker = true;
+            }
+            if (deviceInfo.kind == 'videoinput') {
+                flagWebCam = true;
+            }
+            //   const option = document.createElement('option');
+            //   option.value = deviceInfo.deviceId;
+            //   if (deviceInfo.kind === 'audioinput') {
+            //     option.text = deviceInfo.label || `microphone ${audioInputSelect.length + 1}`;
+            //     audioInputSelect.appendChild(option);
+            //   } else if (deviceInfo.kind === 'audiooutput') {
+            //     option.text = deviceInfo.label || `speaker ${audioOutputSelect.length + 1}`;
+            //     audioOutputSelect.appendChild(option);
+            //   } else if (deviceInfo.kind === 'videoinput') {
+            //     option.text = deviceInfo.label || `camera ${videoSelect.length + 1}`;
+            //     videoSelect.appendChild(option);
+            //   } else {
+            //     console.log('Some other kind of source/device: ', deviceInfo);
+            //   }
+        }
+        var msg = '';
+        if (!flagMic) {
+            msg += 'microphone ';
+        }
+        if (!flagSpeaker) {
+            msg += 'speaker ';
+        }
+        if (!flagWebCam) {
+            msg += 'webcam ';
+        }
+        if (msg != '') {
+            alert(msg + "not found!");
+        }
+        // selectors.forEach((select, selectorIndex) => {
+        //   if (Array.prototype.slice.call(select.childNodes).some(n => n.value === values[selectorIndex])) {
+        //     select.value = values[selectorIndex];
+        //   }
+        // });
+    }
+    HandleDeviceError(error) {
+        if (error.name == "NotFoundError" || error.name == "DevicesNotFoundError") {
+            alert("webcam or mic not connected to your system");
+        }
+        else if (error.name == "NotReadableError" || error.name == "TrackStartError") {
+            alert("webcam or mic already in use by another application");
+        } else if (error.name == "OverconstrainedError" || error.name == "ConstraintNotSatisfiedError") {
+            alert("webcam or mic not supported!");
+        } else if (error.name == "NotAllowedError" || error.name == "PermissionDeniedError") {
+            alert("Access denied for accessing webcam or mic!");
+        } else if (error.name == "MediaStreamError" || error.name == "TypeError") {
+            //empty constraints object
+            //alert("Unable to get media!");
+            console.log("empty constraints object");
+        } else if (error.name == "PermissionDismissedError") {
+            alert("Permission is dismissed for access webcam or mic");
+        }
+        console.log('navigator.MediaDevices.getUserMedia error: ', error.message, error.name);
+    }
 }

@@ -1,0 +1,12 @@
+.localvideo {
+    position: absolute;
+    height: 100px;
+    width: 100px;
+    bottom: 0px;
+    right: 10px;
+}
+
+.remotevideo {
+    width: 100%;
+    height: 100%;
+}

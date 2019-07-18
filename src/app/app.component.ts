@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { ChatService } from './services/chat.service';
 import * as moment from 'moment';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-root',
@@ -9,19 +10,13 @@ import * as moment from 'moment';
 })
 export class AppComponent {
   title = 'chatApp';
-  public uname = '';
-  public isUserLogged = false;
-  constructor(private chatService: ChatService) {
+  constructor(private chatService: ChatService,
+    private router: Router) {
+      this.router.navigate(['/']);
   }
-
-  Login() {
-    if (this.uname != '') {
-      this.chatService.SetUserName(this.uname)
-      .subscribe(data=>{
-        if(data.username){
-          this.isUserLogged=true;
-        }
-      })
-    }
+  Logout(){
+      sessionStorage.clear();
+      document.getElementById("btn-logout").style.display="none";
+      this.router.navigate(['/Login']);
   }
 }

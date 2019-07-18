@@ -1,0 +1,14 @@
+<div *ngIf="!isUserLogged" class="row no-margin" style="width:100%; height: 100%;">
+    <div class="col-lg-4"></div>
+    <div class="col-lg-4" style="text-align: center;">
+        <div class="row">
+            <div class="col-lg-10">
+                <input [(ngModel)]="uname" class="form-control" placeholder="Enter your name" type="text" name="uname">
+            </div>
+            <div class="col-lg-2">
+                <button (click)="Login()" class="btn btn-primary">Login</button>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4"></div>
+</div>

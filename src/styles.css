@@ -1,1 +1,176 @@
 /* You can add global styles to this file, and also import other style files */
+
+@import '~bootstrap/dist/css/bootstrap.min.css';
+
+/*
+* General
+*/
+
+body {
+    background-color: #d3d3d3 !important;
+    font-family: "Open Sans", sans-serif;
+    margin: 0px;
+    height: 95vh;
+}
+
+ng-component {
+    width: 100%;
+}
+
+
+/*--------------------------------------------------------------
+# Header
+--------------------------------------------------------------*/
+
+#header {
+    padding: 0px;
+    height: 40px;
+    position: fixed;
+    left: 0;
+    top: 0;
+    right: 0;
+    z-index: 997;
+    width: 100vw;
+    background-color: #00caf7c2;
+}
+
+#header #logo {
+    float: left;
+}
+
+#header #logo h1 {
+    font-size: 36px;
+    margin: 0;
+    padding: 6px 0;
+    line-height: 1;
+    font-family: "Poppins", sans-serif;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+}
+
+#header #logo h1 a,
+#header #logo h1 a:hover {
+    color: #fff;
+}
+
+#header #logo img {
+    padding: 0;
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    #header #logo h1 {
+        font-size: 26px;
+    }
+    #header #logo img {
+        max-height: 40px;
+    }
+}
+
+#header.header-fixed {
+    background-color: #069;
+    padding: 0px;
+    height: 5vh;
+}
+
+.logo {
+    height: 100%;
+    position: absolute;
+    top: 0px;
+}
+
+.btn-header {
+    height: 5vh;
+    font-size: 2vh !important;
+    padding: 0px 4px !important;
+    float: left;
+    margin: 0px 2px;
+}
+
+
+/*--------------------------------------------------------------
+# Section Main
+--------------------------------------------------------------*/
+
+#main {
+    background: #fff;
+    padding-top: 40px;
+}
+
+#main .main-container .content {
+    background: #fff;
+}
+
+#main .main-container .title {
+    color: #333;
+    font-weight: 700;
+    font-size: 32px;
+}
+
+@media (max-width: 768px) {
+    #main .main-container .title {
+        padding-top: 15px;
+    }
+}
+
+#main .main-container p {
+    line-height: 26px;
+}
+
+#main .main-container p:last-child {
+    margin-bottom: 0;
+}
+
+#main .main-container .icon-box {
+    background: #fff;
+    background-size: cover;
+    padding: 0 0 30px 0;
+}
+
+#main .main-container .icon-box .icon {
+    float: left;
+    background: #fff;
+    width: 64px;
+    height: 64px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    text-align: center;
+    border-radius: 50%;
+    border: 2px solid #2dc997;
+}
+
+#main .main-container .icon-box .icon i {
+    color: #2dc997;
+    font-size: 24px;
+}
+
+#main .main-container .icon-box .title {
+    margin-left: 80px;
+    font-weight: 500;
+    margin-bottom: 5px;
+    font-size: 18px;
+    text-transform: uppercase;
+}
+
+#main .main-container .icon-box .title a {
+    color: #111;
+}
+
+#main .main-container .icon-box .description {
+    margin-left: 80px;
+    line-height: 24px;
+    font-size: 14px;
+}
+
+
+/*--------------------------------------------------------------
+# Footer
+--------------------------------------------------------------*/
+
+footer {
+    border-top: 1px solid #95d4e7;
+    text-align: center;
+}

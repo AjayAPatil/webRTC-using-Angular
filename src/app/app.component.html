@@ -1,9 +1,19 @@
-<div *ngIf="!isUserLogged">
-    <input type="text" name="uname" [(ngModel)]="uname">
-    <button (click)="Login()">connect</button>
-</div>
-<div *ngIf="isUserLogged">
-    <message></message>
-</div>
-<video-call>Loading</video-call>
-<router-outlet></router-outlet>
+<header id="header">
+    <div class="container">
+        <div id="logo" class="pull-left logo" style="height: 40px;">
+
+        </div>
+        <button (click)="Logout()" id="btn-logout" class="btn btn-danger btn-sm" style="display:none; position: fixed; top:5px; right:0px;">Logout</button>
+    </div>
+</header>
+<main id="main" class="main" style="height:100%;">
+    <section id="about" class="no-padding" style="height:100%;">
+        <div class="container no-padding no-margin" style="max-width: 100%; height:100%;">
+            <div class="row about-container no-margin" style="height:100%;margin: 0px;padding: 10px;">
+                <router-outlet></router-outlet>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer>Danphe Telemedicine</footer>
