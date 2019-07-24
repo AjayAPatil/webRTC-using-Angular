@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Input } from '@angular/core';
 import { Observable, empty } from 'rxjs';
 import { ChatService } from '../services/chat.service';
 import { async } from 'q';
@@ -37,10 +37,28 @@ export class VideoComponent implements OnInit {
         offerToReceiveAudio: true,
         offerToReceiveVideo: true
     };
-    public selectors = [];
+    public loggedUserName;
+
+    public caller;
+    @Input('caller')
+    public set setCaller(_caller) {
+        this.caller = _caller;
+    }
+    
+    public userType;
+    @Input("userType")
+    public set setUserType(_type){
+        if(_type == 'receiver'){
+            setTimeout(() => {
+                this.Call();
+            }, 2000);
+        }
+    }
+    
 
     constructor(private chatService: ChatService) {
         this.GetLocalStream();
+        this.loggedUserName=sessionStorage.getItem("username");
     }
 
     SetConnection() {
@@ -73,11 +91,10 @@ export class VideoComponent implements OnInit {
             this.OnIceCandidate(this.peerConnection, e);
         };
         this.peerConnection.ontrack = (event) => {
-            console.log("on track");
             // don't set srcObject again if it is already set.
-            for (var stream of event.streams) {
-                console.log("Remote streams: " + stream.id);
-            }
+            //for (var stream of event.streams) {
+                //console.log("Remote streams: " + stream.id);
+            //}
             this.GotRemoteStream(event.streams[0]);
         };
         this.peerConnection.oniceconnectionstatechange = e => {
@@ -92,8 +109,8 @@ export class VideoComponent implements OnInit {
             });
     }
     OnCallRequestReceived(data) {
-        console.log("call received");
-        console.log(data);
+        //console.log("call received");
+        //console.log(data);
         if (data.desc) {
             var descrip = new RTCSessionDescription(data.desc);
             if (descrip.type == "offer") {
@@ -123,11 +140,6 @@ export class VideoComponent implements OnInit {
                 console.error(err);
             }
         };
-        // //caller creates offer
-        // this.peerConnection.createOffer(this.offerOptions)
-        //     .then(
-        //         this.OnCreateOfferSuccess.bind(this),
-        //         this.OnCreateSessionDescriptionError.bind(this));
     }
 
     OnCreateOfferSuccess(event) {
@@ -135,7 +147,7 @@ export class VideoComponent implements OnInit {
         this.peerConnection.setLocalDescription(new RTCSessionDescription(event)).then(
             () => {
                 /**Step 3: caller sends the description to the callee */
-                this.chatService.SendCallRequest(this.peerConnection.localDescription, 'desc');
+                this.chatService.SendCallRequest(this.peerConnection.localDescription, 'desc',this.caller);
                 this.ShowSuccess('created offer /nlocal description set /n=>Success');
             },
             this.OnSetSessionDescriptionError.bind(this)
@@ -153,7 +165,7 @@ export class VideoComponent implements OnInit {
     }
 
     OnSetRemoteSuccess(val) {
-        console.log("remote success");
+        //console.log("remote success");
         /**Step 5: callee creates answer */
         this.peerConnection.createAnswer().then(
             this.OnCreateAnswerSuccess.bind(this),
@@ -163,12 +175,12 @@ export class VideoComponent implements OnInit {
 
     OnCreateAnswerSuccess(event) {
         /**Step 6: callee sets local description */
-        console.log('event');
-        console.log(event);
+        //console.log('event');
+        //console.log(event);
         this.peerConnection.setLocalDescription(new RTCSessionDescription(event)).then(
             () => {
                 /**Step 7: callee send the description to caller */
-                this.chatService.SendCallRequest(this.peerConnection.localDescription, 'desc');
+                this.chatService.SendCallRequest(this.peerConnection.localDescription, 'desc',this.caller);
                 this.ShowSuccess("create answer /n=>success");
             },
             this.OnSetSessionDescriptionError.bind(this)
@@ -209,23 +221,23 @@ export class VideoComponent implements OnInit {
     OnIceCandidate(conn, event) {
         if (event.candidate) {
             // Send the candidate to the remote peer
-            console.log("Send the candidate to the remote peer");
+            //console.log("Send the candidate to the remote peer");
             var candi = new RTCIceCandidate(event.candidate);
-            this.chatService.SendCallRequest(candi, 'candidate');
+            this.chatService.SendCallRequest(candi, 'candidate',this.caller);
         } else {
             // All ICE candidates have been sent
-            console.log("All ICE candidates have been sent");
+            //console.log("All ICE candidates have been sent");
         }
     }
 
     OnIceStateChange(peerConn, event) {
         if (peerConn) {
-            console.log('ICE state change event: ', event);
+            //console.log('ICE state change event: ', event);
         }
     }
 
     GotRemoteStream(stream) {
-        console.log("got remote stream");
+        //console.log("got remote stream");
         var lv = document.getElementById('remote-video') as HTMLVideoElement;
         lv.srcObject = stream;
 
@@ -244,7 +256,7 @@ export class VideoComponent implements OnInit {
     }
 
     OnCreateSessionDescriptionError(event) {
-        console.log("OnCreateSessionDescriptionError");
+        //console.log("OnCreateSessionDescriptionError");
         // this.peerConnection.setRemoteDescription(event).then(
         //     () => {
         //         this.OnSetRemoteSuccess(this.peerConnection);
@@ -254,10 +266,10 @@ export class VideoComponent implements OnInit {
     }
 
     ShowSuccess(message) {
-        console.log(message);
+        //console.log(message);
     }
     OnSetSessionDescriptionError(val) {
-        console.log("error " + val);
+        //console.log("error " + val);
     }
     GotDevices(deviceInfos) {
         // Handles being called several times to update labels. Preserve values.
@@ -272,7 +284,7 @@ export class VideoComponent implements OnInit {
         var flagWebCam = false;
         for (let i = 0; i !== deviceInfos.length; ++i) {
             const deviceInfo = deviceInfos[i];
-            console.log(i + 1, deviceInfo.label);
+            //console.log(i + 1, deviceInfo.label);
             if (deviceInfo.kind == 'audioinput') {
                 flagMic = true;
             }

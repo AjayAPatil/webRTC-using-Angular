@@ -20,8 +20,17 @@ export class ChatService {
         });
     }
 
-    public SendMessage(message) {
-        this.socket.emit('new-message', message);
+    public BroadCastMessage(message) {
+        this.socket.emit('new-broadcast-message', message);
+    }
+
+    public SendMessage(message, from, to) {
+        //this.socket.emit('new-message', message);
+        this.socket.emit('new-message', {
+            toid:to,
+            message: message,
+            fromname: from
+        });
     }
 
     public GetMessages() {
@@ -38,27 +47,72 @@ export class ChatService {
             });
         });
     }
+
+    /***
+     * Section Video call
+     * following requests are used for video call
+     */
+
+     public VideoCallRequest(from,to){
+        this.socket.emit('video-call', {
+            fromname: from,
+            toid: to
+        });
+     }
+     public OnVideoCallRequest(){
+        return Observable.create((observer) => {
+            this.socket.on('video-call', (data) => {
+                observer.next(data);
+            });
+        });
+     }
+     public VideoCallAccepted(from,to){
+        this.socket.emit('video-call-accept', {
+            fromname: from,
+            toid: to
+        });
+     }
+     public OnVideoCallAccepted(){
+        return Observable.create((observer) => {
+            this.socket.on('video-call-accept', (data) => {
+                observer.next(data);
+            });
+        });
+     }
+     public VideoCallRejected(from,to){
+        this.socket.emit('video-call-reject', {
+            fromname: from,
+            toid: to
+        });
+     }
+     public OnVideoCallRejected(){
+        return Observable.create((observer) => {
+            this.socket.on('video-call-reject', (data) => {
+                observer.next(data);
+            });
+        });
+     }
     /**
      * 
      * @param candidate or @param description for video call
      * need to send remote user id
      */
-    public SendCallRequest(val,type){
+    public SendCallRequest(val, type, uid) {
         var data;
-        if(type == 'desc'){
-            data={
-                //to: uid,
+        if (type == 'desc') {
+            data = {
+                toid: uid,
                 desc: val
             }
-        }else{
+        } else {
             data = {
-                //to: uid,
+                toid: uid,
                 candidate: val
             }
         }
         this.socket.emit('call-request', data);
     }
-    public ReceiveCallRequest(){
+    public ReceiveCallRequest() {
         return Observable.create((observer) => {
             this.socket.on('call-request', (data) => {
                 observer.next(data);

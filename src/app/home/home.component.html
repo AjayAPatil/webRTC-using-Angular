@@ -1,2 +1,34 @@
-<button (click)="VideoCall()" *ngIf="!isVideoCall" class="btn btn-success">Video Call</button>
-<video-call *ngIf="isVideoCall">Loading</video-call>
+<div class="row">
+    <div class="col-lg-2">
+        <button onclick="sessionStorage.clear()" class="btn-danger btn-sm">Logout</button>
+        <table>
+            <tr *ngFor="let u of liveUserList">
+                <td>
+                    {{u.username}}
+                </td>
+                <td>
+                    <button (click)="VideoCall(u)" *ngIf="!isVideoCallAccepted || u.username==loggedUserName" class="btn btn-success btn-sm">Video Call</button>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div class="col-md-10">
+        <video-call [userType]="userType" [caller]="caller" *ngIf="isVideoCallAccepted">Loading</video-call>
+    </div>
+</div>
+
+<!-- The Modal -->
+<div class="popup-box" *ngIf="isVideoCall">
+    <div class="popup-content">
+        <span (click)="Close()" class="popup-close">&times;</span>
+        <div class="popup-header">
+            <h4>{{callingInfo.name}}</h4>
+            <h5>{{callingInfo.content}}</h5>
+        </div>
+        <div *ngIf="callingInfo.type == 'receiver'" style="text-align: center;">
+            <button (click)="AcceptVideoCall()" class="btn btn-success btn-sm">Accept</button>
+            <button (click)="RejectVideoCall()" class="btn btn-danger btn-sm">Reject</button>
+        </div>
+    </div>
+
+</div>

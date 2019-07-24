@@ -19,17 +19,23 @@ io.on('connection', (socket) => {
     console.log('user connected');
 
     // when the client emits 'new message', this listens and executes
+    // socket.on('new-message', (data) => {
+    //     // we tell the client to execute 'new message'
+    //     socket.broadcast.emit('new-message', {
+    //         username: socket.username,
+    //         message: data
+    //     });
+    // });
     socket.on('new-message', (data) => {
-        // we tell the client to execute 'new message'
-        socket.broadcast.emit('new-message', {
-            username: socket.username,
-            message: data
-        });
+        socket.broadcast.to(data.toid).emit('new-message', data);
     });
 
     socket.on('add user', (username) => {
         if (addedUser) return;
-        clients.push(username);
+        clients.push({
+            id: socket.id,
+            username: username
+        });
         // we store the username in the socket session for this client
         socket.username = username;
         ++numUsers;
@@ -46,7 +52,10 @@ io.on('connection', (socket) => {
             username: socket.username,
             numUsers: numUsers
         });
-        socket.broadcast.emit('client-list', clients);
+
+        setInterval(() => {
+            socket.broadcast.emit('client-list', clients);
+        }, 3000);
     });
 
     // when the client emits 'typing', we broadcast it to others
@@ -67,6 +76,15 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         if (addedUser) {
             --numUsers;
+            if (clients.length > 0) {
+                var i = 0;
+                clients.forEach(a => {
+                    if (a.username == socket.username) {
+                        clients.splice(i, 1);
+                    }
+                    i++;
+                });
+            }
             var index = clients.indexOf(socket.username);
             if (index !== -1) {
                 clients.splice(index, 1);
@@ -79,10 +97,23 @@ io.on('connection', (socket) => {
         }
     });
 
+    /***
+     * Section Video call
+     * following requests are used for video call
+     */
+    socket.on('video-call', (data) => {
+        socket.broadcast.to(data.toid).emit('video-call', data);
+    });
+    socket.on('video-call-accept', (data) => {
+        socket.broadcast.to(data.toid).emit('video-call-accept', data);
+    });
+    socket.on('video-call-reject', (data) => {
+        socket.broadcast.to(data.toid).emit('video-call-reject', data);
+    });
     // when the caller emits 'call-request', this listens and executes
     socket.on('call-request', (data) => {
         // we tell the client to execute 'call-request'
-        socket.broadcast.emit('call-request', {
+        socket.broadcast.to(data.toid).emit('call-request', {
             username: socket.username,
             data: data
         });

@@ -17,7 +17,7 @@ export class MessageComponent implements OnInit {
   }
 
   SendMessage() {
-    this.chatService.SendMessage(this.message);
+    this.chatService.BroadCastMessage(this.message);
     this.message = '';
   }
 
