@@ -3,8 +3,9 @@ import { NgModule } from '@angular/core';
 import { HashLocationStrategy, LocationStrategy } from "@angular/common";
 import { FormsModule } from '@angular/forms';
 import { HttpModule } from '@angular/http';
+import { AngularFontAwesomeModule } from 'angular-font-awesome';
 
-import { ChatService } from './services/chat.service';
+import { SocketIOService } from './services/socket.io.service';
 
 import { AppRoutingModule } from './app-routing.module';
 import { HomeComponent } from './home/home.component';
@@ -25,10 +26,11 @@ import { VideoComponent } from './communication/video.component';
     BrowserModule,
     AppRoutingModule,
     FormsModule,
-    HttpModule
+    HttpModule,
+    AngularFontAwesomeModule
   ],
   providers: [
-    ChatService,
+    SocketIOService,
     { provide: LocationStrategy, useClass: HashLocationStrategy }
   ],
   bootstrap: [AppComponent]

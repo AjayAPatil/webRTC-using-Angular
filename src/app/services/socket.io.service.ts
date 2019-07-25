@@ -1,10 +1,11 @@
 import * as io from 'socket.io-client';
-import { Observable } from 'rxjs';
+import { Observable, from } from 'rxjs';
 
-export class ChatService {
+export class SocketIOService {
     private url = '/';
     private socket;
     private connected = false;
+    public connectedusers: any;
 
     constructor() {
         this.socket = io(this.url);
@@ -19,6 +20,9 @@ export class ChatService {
             });
         });
     }
+    public RemoveUser() {
+        this.socket.emit('disconnect');
+    }
 
     public BroadCastMessage(message) {
         this.socket.emit('new-broadcast-message', message);
@@ -27,7 +31,7 @@ export class ChatService {
     public SendMessage(message, from, to) {
         //this.socket.emit('new-message', message);
         this.socket.emit('new-message', {
-            toid:to,
+            toid: to,
             message: message,
             fromname: from
         });
@@ -47,51 +51,76 @@ export class ChatService {
             });
         });
     }
-
     /***
      * Section Video call
      * following requests are used for video call
      */
 
-     public VideoCallRequest(from,to){
+    public VideoCallRequest(from, to) {
         this.socket.emit('video-call', {
             fromname: from,
             toid: to
         });
-     }
-     public OnVideoCallRequest(){
+    }
+    public OnVideoCallRequest() {
         return Observable.create((observer) => {
             this.socket.on('video-call', (data) => {
                 observer.next(data);
             });
         });
-     }
-     public VideoCallAccepted(from,to){
+    }
+    public VideoCallAccepted(from, to) {
         this.socket.emit('video-call-accept', {
             fromname: from,
             toid: to
         });
-     }
-     public OnVideoCallAccepted(){
+    }
+    public OnVideoCallAccepted() {
         return Observable.create((observer) => {
             this.socket.on('video-call-accept', (data) => {
                 observer.next(data);
             });
         });
-     }
-     public VideoCallRejected(from,to){
+    }
+    public BusyNow() {
+        this.socket.emit('busy-user');
+    }
+    public GetBusyUsers() {
+        this.socket.emit('get-busy-user');
+        return Observable.create((observer) => {
+            this.socket.on('get-busy-user', (data) => {
+                observer.next(data);
+            });
+        });
+    }
+    public EndVideoCall(from, to, toname) {
+        this.socket.emit('end-video-call', {
+            fromname: from,
+            toid: to,
+            toname: toname
+        })
+    }
+    public OnVideoCallEnded() {
+        this.socket.emit('get-busy-user');
+        return Observable.create((observer) => {
+            this.socket.on('video-call-ended', (data) => {
+                observer.next(data);
+            });
+        });
+    }
+    public VideoCallRejected(from, to) {
         this.socket.emit('video-call-reject', {
             fromname: from,
             toid: to
         });
-     }
-     public OnVideoCallRejected(){
+    }
+    public OnVideoCallRejected() {
         return Observable.create((observer) => {
             this.socket.on('video-call-reject', (data) => {
                 observer.next(data);
             });
         });
-     }
+    }
     /**
      * 
      * @param candidate or @param description for video call
