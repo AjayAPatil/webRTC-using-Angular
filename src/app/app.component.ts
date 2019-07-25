@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { ChatService } from './services/chat.service';
+import { SocketIOService } from './services/socket.io.service';
 import * as moment from 'moment';
 import { Router } from '@angular/router';
 
@@ -10,7 +10,7 @@ import { Router } from '@angular/router';
 })
 export class AppComponent {
   title = 'chatApp';
-  constructor(private chatService: ChatService,
+  constructor(private socketIOService: SocketIOService,
     private router: Router) {
       this.router.navigate(['/']);
   }

@@ -1,13 +1,14 @@
 <!-- <div class="row">
     <button (click)="Call()">Connect</button>
 </div> -->
-<div class="row" style="height: 75%;">
-    <div class="col-lg-6" style="overflow: auto; height: 100%;">
+<div class="row" style="height: 100%; width:100%; overflow: hidden;">
+    <div class="col-lg-12" style="height: 100%;">
         <video id="remote-video" class="remotevideo" controls autoplay></video>
         <video id="local-video" class="localvideo" controls autoplay muted></video>
     </div>
-    <div class="col-lg-6" style="overflow: auto; height: 100%;">
-    </div>
+</div>
+<div class="row call-btn-div">
+    <button (click)="EndCall()" class="btn btn-sm btn-danger end-call-btn"><i class="fa fa-phone"></i></button>
 </div>
 <!-- <div id="div-remote-video"></div> -->
 <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>

@@ -13,6 +13,7 @@ let io = socketIO(server);
 
 const port = process.env.PORT || 3000;
 var clients = [];
+var busyUsers = [];
 var numUsers = 0;
 io.on('connection', (socket) => {
     var addedUser = false;
@@ -34,7 +35,8 @@ io.on('connection', (socket) => {
         if (addedUser) return;
         clients.push({
             id: socket.id,
-            username: username
+            username: username,
+            busy: false
         });
         // we store the username in the socket session for this client
         socket.username = username;
@@ -85,15 +87,22 @@ io.on('connection', (socket) => {
                     i++;
                 });
             }
-            var index = clients.indexOf(socket.username);
-            if (index !== -1) {
-                clients.splice(index, 1);
+            // var index = clients.indexOf(socket.username);
+            // if (index !== -1) {
+            //     clients.splice(index, 1);
+            // }
+
+            if (busyUsers.length > 0) {
+                var i = 0;
+                busyUsers.forEach(a => {
+                    if (a.username == socket.username) {
+                        busyUsers.splice(i, 1);
+                    }
+                    i++;
+                });
             }
             // echo globally that this client has left
-            socket.broadcast.emit('user left', {
-                username: socket.username,
-                numUsers: numUsers
-            });
+            socket.broadcast.emit('user-left', socket.username);
         }
     });
 
@@ -109,6 +118,29 @@ io.on('connection', (socket) => {
     });
     socket.on('video-call-reject', (data) => {
         socket.broadcast.to(data.toid).emit('video-call-reject', data);
+    });
+    socket.on('get-busy-user', () => {
+        socket.broadcast.emit('get-busy-user', busyUsers);
+    });
+    socket.on('busy-user', () => {
+        busyUsers.push({
+            id: socket.id,
+            username: socket.username
+        });
+        socket.broadcast.emit('get-busy-user', busyUsers);
+    });
+    socket.on('end-video-call', (data) => {
+        if (busyUsers.length > 0) {
+            var i = 0;
+            busyUsers.forEach(a => {
+                if (a.username == socket.username || a.username == data.toname) {
+                    busyUsers.splice(i, 1);
+                }
+                i++;
+            });
+        }
+        socket.broadcast.to(data.toid).emit('video-call-ended', data);
+        socket.broadcast.emit('get-busy-user', busyUsers);
     });
     // when the caller emits 'call-request', this listens and executes
     socket.on('call-request', (data) => {

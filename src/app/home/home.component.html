@@ -1,19 +1,19 @@
 <div class="row">
     <div class="col-lg-2">
-        <button onclick="sessionStorage.clear()" class="btn-danger btn-sm">Logout</button>
+        <button (click)="Logout()" class="btn-danger btn-sm">Logout</button>
         <table>
             <tr *ngFor="let u of liveUserList">
                 <td>
                     {{u.username}}
                 </td>
                 <td>
-                    <button (click)="VideoCall(u)" *ngIf="!isVideoCallAccepted || u.username==loggedUserName" class="btn btn-success btn-sm">Video Call</button>
+                    <button (click)="VideoCall(u)" *ngIf="(!isVideoCallAccepted || u.username==loggedUserName) && !u.busy" class="btn btn-success btn-sm">Video Call</button>
                 </td>
             </tr>
         </table>
     </div>
     <div class="col-md-10">
-        <video-call [userType]="userType" [caller]="caller" *ngIf="isVideoCallAccepted">Loading</video-call>
+        <video-call [userType]="userType" [caller]="caller" (callback)="CallBack($event)" *ngIf="isVideoCallAccepted">Loading</video-call>
     </div>
 </div>
 

@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import * as moment from 'moment';
-import { ChatService } from '../services/chat.service';
+import { SocketIOService } from '../services/socket.io.service';
 import { Router } from '@angular/router';
 
 @Component({
@@ -10,20 +10,15 @@ export class LoginComponent {
     public uname = '';
     public isUserLogged = false;
 
-    constructor(private chatService: ChatService,
+    constructor(private socketIOService: SocketIOService,
         private router: Router) {
     }
 
     Login() {
         if (this.uname != '') {
-            this.chatService.SetUserName(this.uname)
-                .subscribe(data => {
-                    if (data.username) {
-                        this.isUserLogged = true;
-                        this.router.navigate(['/']);
-                        sessionStorage.setItem('username', data.username);
-                    }
-                })
+            sessionStorage.setItem('username', this.uname);
+            this.isUserLogged = true;
+            this.router.navigate(['/']);
         }
     }
 }

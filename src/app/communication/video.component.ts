@@ -1,7 +1,8 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
 import { Observable, empty } from 'rxjs';
-import { ChatService } from '../services/chat.service';
+import { SocketIOService } from '../services/socket.io.service';
 import { async } from 'q';
+import { Router } from '@angular/router';
 /**
 Step 1: caller creates offer
 
@@ -44,21 +45,24 @@ export class VideoComponent implements OnInit {
     public set setCaller(_caller) {
         this.caller = _caller;
     }
-    
+
     public userType;
     @Input("userType")
-    public set setUserType(_type){
-        if(_type == 'receiver'){
+    public set setUserType(_type) {
+        if (_type == 'receiver') {
             setTimeout(() => {
                 this.Call();
             }, 2000);
         }
     }
-    
 
-    constructor(private chatService: ChatService) {
+    @Output("callback")
+    callback: EventEmitter<Object> = new EventEmitter<Object>();
+
+    constructor(private socketIOService: SocketIOService,
+        private router: Router) {
         this.GetLocalStream();
-        this.loggedUserName=sessionStorage.getItem("username");
+        this.loggedUserName = sessionStorage.getItem("username");
     }
 
     SetConnection() {
@@ -93,8 +97,10 @@ export class VideoComponent implements OnInit {
         this.peerConnection.ontrack = (event) => {
             // don't set srcObject again if it is already set.
             //for (var stream of event.streams) {
-                //console.log("Remote streams: " + stream.id);
+            //console.log("Remote streams: " + stream.id);
             //}
+            //getting first stream only 
+            //this is only for p2p call
             this.GotRemoteStream(event.streams[0]);
         };
         this.peerConnection.oniceconnectionstatechange = e => {
@@ -102,11 +108,12 @@ export class VideoComponent implements OnInit {
         };
     }
     ngOnInit() {
-        this.chatService
+        this.socketIOService
             .ReceiveCallRequest()
             .subscribe(data => {
                 this.OnCallRequestReceived(data.data);
             });
+        this.OnCallEnded();
     }
     OnCallRequestReceived(data) {
         //console.log("call received");
@@ -147,7 +154,7 @@ export class VideoComponent implements OnInit {
         this.peerConnection.setLocalDescription(new RTCSessionDescription(event)).then(
             () => {
                 /**Step 3: caller sends the description to the callee */
-                this.chatService.SendCallRequest(this.peerConnection.localDescription, 'desc',this.caller);
+                this.socketIOService.SendCallRequest(this.peerConnection.localDescription, 'desc', this.caller);
                 this.ShowSuccess('created offer /nlocal description set /n=>Success');
             },
             this.OnSetSessionDescriptionError.bind(this)
@@ -180,7 +187,7 @@ export class VideoComponent implements OnInit {
         this.peerConnection.setLocalDescription(new RTCSessionDescription(event)).then(
             () => {
                 /**Step 7: callee send the description to caller */
-                this.chatService.SendCallRequest(this.peerConnection.localDescription, 'desc',this.caller);
+                this.socketIOService.SendCallRequest(this.peerConnection.localDescription, 'desc', this.caller);
                 this.ShowSuccess("create answer /n=>success");
             },
             this.OnSetSessionDescriptionError.bind(this)
@@ -190,7 +197,7 @@ export class VideoComponent implements OnInit {
     OnCallAnswer(descrip) {
         /**Step 8: caller receives the answer and sets remote description */
         this.peerConnection.setRemoteDescription(descrip)
-            .then(() => console.log(this), console.log(this)).catch(err => console.log(err));
+        //.then(() => console.log(this), console.log(this)).catch(err => console.log(err));
     }
 
     //get local stream
@@ -223,7 +230,7 @@ export class VideoComponent implements OnInit {
             // Send the candidate to the remote peer
             //console.log("Send the candidate to the remote peer");
             var candi = new RTCIceCandidate(event.candidate);
-            this.chatService.SendCallRequest(candi, 'candidate',this.caller);
+            this.socketIOService.SendCallRequest(candi, 'candidate', this.caller);
         } else {
             // All ICE candidates have been sent
             //console.log("All ICE candidates have been sent");
@@ -346,5 +353,37 @@ export class VideoComponent implements OnInit {
             alert("Permission is dismissed for access webcam or mic");
         }
         console.log('navigator.MediaDevices.getUserMedia error: ', error.message, error.name);
+    }
+    EndCall() {
+        var callername = this.socketIOService.connectedusers.find(a => a.id == this.caller);
+        this.socketIOService.EndVideoCall(this.loggedUserName, this.caller, callername);
+        this.CallBack();
+    }
+    OnCallEnded() {
+        this.socketIOService
+            .OnVideoCallEnded()
+            .subscribe(data => {
+                if (data) {
+                    this.CallBack();
+                }
+            });
+    }
+    CallBack() {
+        var senders = this.peerConnection.getSenders();
+        senders.forEach(s => {
+            this.peerConnection.removeTrack(s);
+        });
+
+        // stop both video and audio
+        this.localStream.getTracks().forEach((track) => {
+            track.stop();
+        });
+        // stop only audio
+        this.localStream.getAudioTracks()[0].stop();
+        //stop only audio 
+        this.localStream.getVideoTracks()[0].stop();
+        //this.peerConnection.close();
+        this.localStream;
+        this.callback.emit({ status: "ended" });
     }
 }

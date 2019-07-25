@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import * as moment from 'moment';
 import { Router } from '@angular/router';
-import { ChatService } from '../services/chat.service';
+import { SocketIOService } from '../services/socket.io.service';
 
 @Component({
     templateUrl: './home.component.html'
@@ -19,19 +19,51 @@ export class HomeComponent implements OnInit {
     public caller: any;
 
     constructor(private router: Router,
-        private chatService: ChatService) {
+        private socketIOService: SocketIOService) {
         this.loggedUserName = sessionStorage.getItem("username");
         if (!this.loggedUserName) {
             this.router.navigate(['/Login']);
+        } else {
+            this.AddUser();
         }
-        window.addEventListener('onload', () => { this.chatService.SetUserName(this.loggedUserName) });
-        //document.getElementById("btn-logout").style.display="block";
     }
 
     ngOnInit() {
-        this.GetUsers();
+        this.GetLiveUsers();
+        this.OnVideoCallRequest();
+        this.OnVideoCallAccepted();
+        this.GetBusyUsers();
+        this.OnVideoCallRejected();
+    }
 
-        this.chatService
+    AddUser() {
+        this.socketIOService.SetUserName(this.loggedUserName)
+            .subscribe(data => {
+                if (data.username) {
+                    //user added
+                }
+            })
+    }
+    GetLiveUsers() {
+        this.socketIOService
+            .GetConnectedUsers()
+            .subscribe(data => {
+                var users = data.filter(a => a.username != this.loggedUserName);
+                var count = 0;
+                for (var i in users) {
+                    if (this.liveUserList.indexOf(data[i]) === -1) {
+                        count++;
+                    }
+                }
+                if (count != this.liveUserList.length) {
+                    this.liveUserList = users;
+                    this.socketIOService.connectedusers = users;
+                    this.GetBusyUsers();
+                }
+            });
+    }
+    OnVideoCallRequest() {
+        this.socketIOService
             .OnVideoCallRequest()
             .subscribe(data => {
                 this.callingInfo.name = data.fromname;
@@ -39,32 +71,40 @@ export class HomeComponent implements OnInit {
                 this.callingInfo.type = "receiver";
                 this.isVideoCall = true;
             });
-        this.chatService
+    }
+    OnVideoCallAccepted() {
+        this.socketIOService
             .OnVideoCallAccepted()
             .subscribe(data => {
                 var calee = this.liveUserList.find(a => a.username == this.callingInfo.name);
                 this.userType = "dialer";
                 this.caller = calee.id;
                 this.isVideoCallAccepted = true;
+                this.socketIOService.BusyNow();
                 this.Close();
             });
-        this.chatService
+    }
+    GetBusyUsers() {
+        this.socketIOService
+            .GetBusyUsers()
+            .subscribe(data => {
+                data.forEach(a => {
+                    this.liveUserList.forEach(a=>{a.busy=false;});
+                    var usr = this.liveUserList.find(b => b.username == a.username);
+                    if (usr) {
+                        usr.busy = true;
+                    }
+                });
+            })
+    }
+    OnVideoCallRejected() {
+        this.socketIOService
             .OnVideoCallRejected()
             .subscribe(data => {
                 this.callingInfo.content = "Call Rejected ..";
                 setTimeout(() => {
                     this.Close();
-                }, 2000);
-            });
-    }
-
-    GetUsers() {
-        this.chatService
-            .GetConnectedUsers()
-            .subscribe(data => {
-                var users = data.filter(a => a.username != this.loggedUserName);
-                if (this.liveUserList != users)
-                    this.liveUserList = users;
+                }, 1000);
             });
     }
     Chat() {
@@ -74,7 +114,7 @@ export class HomeComponent implements OnInit {
     VideoCall(callee) {
         var calee = this.liveUserList.find(a => a.username == callee.username);
         if (calee) {
-            this.chatService.VideoCallRequest(this.loggedUserName, calee.id);
+            this.socketIOService.VideoCallRequest(this.loggedUserName, calee.id);
         }
         this.callee = callee;
         this.callingInfo.name = callee.username;
@@ -86,10 +126,11 @@ export class HomeComponent implements OnInit {
     AcceptVideoCall() {
         var calee = this.liveUserList.find(a => a.username == this.callingInfo.name);
         if (calee) {
-            this.chatService.VideoCallAccepted(this.loggedUserName, calee.id);
+            this.socketIOService.VideoCallAccepted(this.loggedUserName, calee.id);
             this.userType = "receiver";
             this.caller = calee.id;
             this.isVideoCallAccepted = true;
+            this.socketIOService.BusyNow();
         }
         this.Close();
     }
@@ -97,7 +138,7 @@ export class HomeComponent implements OnInit {
     RejectVideoCall() {
         var calee = this.liveUserList.find(a => a.username == this.callingInfo.name);
         if (calee) {
-            this.chatService.VideoCallRejected(this.loggedUserName, calee.id);
+            this.socketIOService.VideoCallRejected(this.loggedUserName, calee.id);
             this.isVideoCallAccepted = false;
         }
         this.Close();
@@ -106,13 +147,19 @@ export class HomeComponent implements OnInit {
         this.isAudioCall = true;
     }
 
-    CallBack() {
+    CallBack(event) {
         this.isChat = false;
         this.isVideoCall = false;
         this.isAudioCall = false;
+        this.isVideoCallAccepted = false;
     }
 
     Close() {
         this.isVideoCall = false;
+    }
+    Logout() {
+        this.socketIOService.RemoveUser();
+        sessionStorage.clear();
+        location.reload();
     }
 }

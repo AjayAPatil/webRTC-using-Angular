@@ -1,5 +1,5 @@
 import { Component, OnInit, Input } from '@angular/core';
-import { ChatService } from '../services/chat.service';
+import { SocketIOService } from '../services/socket.io.service';
 import * as moment from 'moment';
 
 @Component({
@@ -7,22 +7,20 @@ import * as moment from 'moment';
   templateUrl: './message.component.html'
 })
 export class MessageComponent implements OnInit {
-  title = 'chatApp';
   message: string;
   messages: string[] = [];
   users = [];
 
-
-  constructor(private chatService: ChatService) {
+  constructor(private socketIOService: SocketIOService) {
   }
 
   SendMessage() {
-    this.chatService.BroadCastMessage(this.message);
+    this.socketIOService.BroadCastMessage(this.message);
     this.message = '';
   }
 
   ngOnInit() {
-    this.chatService
+    this.socketIOService
       .GetMessages()
       .subscribe(data => {
         var message = data.message;
@@ -34,7 +32,7 @@ export class MessageComponent implements OnInit {
       this.GetUserList();
   }
   GetUserList(){
-    this.chatService
+    this.socketIOService
       .GetConnectedUsers()
       .subscribe(data => {
         this.users=data;
