@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, Input, Output, EventEmitter, ChangeDetectorRef } from '@angular/core';
 import { Observable, empty } from 'rxjs';
 import { SocketIOService } from '../services/socket.io.service';
 import { async } from 'q';
@@ -43,14 +43,17 @@ export class VideoComponent implements OnInit {
     public caller;
     @Input('caller')
     public set setCaller(_caller) {
+        this.changeDetector.detectChanges();
         this.caller = _caller;
     }
 
     public userType;
     @Input("userType")
     public set setUserType(_type) {
+        this.ngOnInit();
         if (_type == 'dialer') {
             setTimeout(() => {
+                this.changeDetector.detectChanges();
                 this.Call();
             }, 2000);
         }
@@ -59,10 +62,10 @@ export class VideoComponent implements OnInit {
     @Output("callback")
     callback: EventEmitter<Object> = new EventEmitter<Object>();
 
-    constructor(private socketIOService: SocketIOService,
-        private router: Router) {
-        this.GetLocalStream();
-        this.loggedUserName = sessionStorage.getItem("username");
+    constructor(
+        private socketIOService: SocketIOService,
+        private router: Router,
+        private changeDetector: ChangeDetectorRef) {
     }
 
     SetConnection() {
@@ -108,6 +111,8 @@ export class VideoComponent implements OnInit {
         };
     }
     ngOnInit() {
+        this.GetLocalStream();
+        this.loggedUserName = sessionStorage.getItem("username");
         this.socketIOService
             .ReceiveCallRequest()
             .subscribe(data => {
@@ -172,7 +177,6 @@ export class VideoComponent implements OnInit {
     }
 
     OnSetRemoteSuccess(val) {
-        //console.log("remote success");
         /**Step 5: callee creates answer */
         this.peerConnection.createAnswer().then(
             this.OnCreateAnswerSuccess.bind(this),
@@ -182,8 +186,6 @@ export class VideoComponent implements OnInit {
 
     OnCreateAnswerSuccess(event) {
         /**Step 6: callee sets local description */
-        //console.log('event');
-        //console.log(event);
         this.peerConnection.setLocalDescription(new RTCSessionDescription(event)).then(
             () => {
                 /**Step 7: callee send the description to caller */
@@ -196,8 +198,8 @@ export class VideoComponent implements OnInit {
 
     OnCallAnswer(descrip) {
         /**Step 8: caller receives the answer and sets remote description */
-        this.peerConnection.setRemoteDescription(descrip)
-        //.then(() => console.log(this), console.log(this)).catch(err => console.log(err));
+        this.peerConnection.setRemoteDescription(new RTCSessionDescription(descrip))
+            .then(() => this.ShowSuccess('Succesfully set remote description')).catch(err => { console.log(err); });
     }
 
     //get local stream
@@ -273,7 +275,7 @@ export class VideoComponent implements OnInit {
     }
 
     ShowSuccess(message) {
-        //console.log(message);
+        console.log(message);
     }
     OnSetSessionDescriptionError(val) {
         //console.log("error " + val);
@@ -384,7 +386,7 @@ export class VideoComponent implements OnInit {
         //stop only audio 
         this.localStream.getVideoTracks()[0].stop();
         //this.peerConnection.close();
-        
+
         this.peerConnection = new RTCPeerConnection();
         this.callback.emit({ status: "ended" });
     }

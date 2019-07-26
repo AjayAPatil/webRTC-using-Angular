@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import * as moment from 'moment';
 import { Router } from '@angular/router';
 import { SocketIOService } from '../services/socket.io.service';
@@ -18,7 +18,9 @@ export class HomeComponent implements OnInit {
     public userType: string;
     public caller: any;
 
-    constructor(private router: Router,
+    constructor(
+        private router: Router,
+        private changeDetector: ChangeDetectorRef,
         private socketIOService: SocketIOService) {
         this.loggedUserName = sessionStorage.getItem("username");
         if (!this.loggedUserName) {
@@ -152,10 +154,13 @@ export class HomeComponent implements OnInit {
         this.isVideoCall = false;
         this.isAudioCall = false;
         this.isVideoCallAccepted = false;
+        this.changeDetector.detectChanges();
+        location.reload();
     }
 
     Close() {
         this.isVideoCall = false;
+        this.changeDetector.detectChanges();
     }
     Logout() {
         this.socketIOService.RemoveUser();

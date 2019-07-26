@@ -98,7 +98,7 @@ export class SocketIOService {
             fromname: from,
             toid: to,
             toname: toname
-        })
+        });
     }
     public OnVideoCallEnded() {
         this.socket.emit('get-busy-user');
