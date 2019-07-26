@@ -88,8 +88,8 @@ export class HomeComponent implements OnInit {
         this.socketIOService
             .GetBusyUsers()
             .subscribe(data => {
+                this.liveUserList.forEach(a => { a.busy = false; });
                 data.forEach(a => {
-                    this.liveUserList.forEach(a=>{a.busy=false;});
                     var usr = this.liveUserList.find(b => b.username == a.username);
                     if (usr) {
                         usr.busy = true;

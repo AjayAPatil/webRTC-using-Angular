@@ -49,7 +49,7 @@ export class VideoComponent implements OnInit {
     public userType;
     @Input("userType")
     public set setUserType(_type) {
-        if (_type == 'receiver') {
+        if (_type == 'dialer') {
             setTimeout(() => {
                 this.Call();
             }, 2000);
@@ -355,8 +355,8 @@ export class VideoComponent implements OnInit {
         console.log('navigator.MediaDevices.getUserMedia error: ', error.message, error.name);
     }
     EndCall() {
-        var callername = this.socketIOService.connectedusers.find(a => a.id == this.caller);
-        this.socketIOService.EndVideoCall(this.loggedUserName, this.caller, callername);
+        var caller = this.socketIOService.connectedusers.find(a => a.id == this.caller);
+        this.socketIOService.EndVideoCall(this.loggedUserName, this.caller, caller.username);
         this.CallBack();
     }
     OnCallEnded() {
@@ -364,6 +364,7 @@ export class VideoComponent implements OnInit {
             .OnVideoCallEnded()
             .subscribe(data => {
                 if (data) {
+                    this.socketIOService.GetBusyUsers();
                     this.CallBack();
                 }
             });
@@ -383,7 +384,8 @@ export class VideoComponent implements OnInit {
         //stop only audio 
         this.localStream.getVideoTracks()[0].stop();
         //this.peerConnection.close();
-        this.localStream;
+        
+        this.peerConnection = new RTCPeerConnection();
         this.callback.emit({ status: "ended" });
     }
 }

@@ -131,13 +131,13 @@ io.on('connection', (socket) => {
     });
     socket.on('end-video-call', (data) => {
         if (busyUsers.length > 0) {
-            var i = 0;
-            busyUsers.forEach(a => {
-                if (a.username == socket.username || a.username == data.toname) {
-                    busyUsers.splice(i, 1);
-                }
-                i++;
-            });
+            var usr1 = busyUsers.find(a => a.username == socket.username);
+            var index1 = busyUsers.indexOf(usr1);
+            busyUsers.splice(index1, 1);
+
+            var usr2 = busyUsers.find(a => a.username == data.toname);
+            var index2 = busyUsers.indexOf(usr2);
+            busyUsers.splice(index2, 1);
         }
         socket.broadcast.to(data.toid).emit('video-call-ended', data);
         socket.broadcast.emit('get-busy-user', busyUsers);
